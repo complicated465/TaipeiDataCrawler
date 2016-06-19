@@ -12,23 +12,32 @@ namespace TaipeiDataCrawler
 {
     public partial class Form1 : Form
     {
+        
         public Form1()
         {
             InitializeComponent();
             WebCrawer myWebCrawer = new WebCrawer(this);
             myWebCrawer.craw();
-            comboBox1.Items.Add("ddd");
-
+          
+            
         }
 
-        public void update(string message)
+
+        public void update(List<Data> dataList)
         {
-            comboBox1.Items.Add(message);
+            comboBox1.DataSource = dataList;
+            comboBox1.DisplayMember = "Name";
+            comboBox1.ValueMember = "RID";
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-           
+            
         }
 
+        private void button1_Click(object sender, EventArgs e)
+        {
+            WebCrawer myWebCrawer = new WebCrawer(this);
+            myWebCrawer.craw(new string[] { comboBox1.Text, comboBox1.SelectedValue.ToString() });
+        }
     }
 }

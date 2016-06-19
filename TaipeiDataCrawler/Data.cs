@@ -8,7 +8,9 @@ namespace TaipeiDataCrawler
 {
     public class Data
     {
-       public string ID { set; get; }
        public string Name { set; get; }
+       public string ID { set; get; }
+       public string RID { set; get; }
+       public string fieldDescription { set; get; }
     }
 }

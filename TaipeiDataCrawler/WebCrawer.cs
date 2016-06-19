@@ -27,128 +27,156 @@ namespace TaipeiDataCrawler
         public void craw()
         {
             int count = 0;
+            int offset = 0;
+            int limit = 100;
+            int first = 0;
             WebClient client = new WebClient();
-            if (File.Exists(System.Windows.Forms.Application.StartupPath + @"\metadata_i.txt"))
+            if (File.Exists(System.Windows.Forms.Application.StartupPath + @"\metadata_.txt"))
             {
-                StreamReader sr1 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\metadata_name.txt", Encoding.UTF8);
-                StreamReader sr2 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\metadata_id.txt", Encoding.UTF8);
+                StreamReader sr1 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\metadata.txt", Encoding.UTF8);
+               // StreamReader sr2 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\metadata_id.txt", Encoding.UTF8);
                 while (!sr1.EndOfStream)
                 {
                     Data temp = new Data();
-                    temp.Name = sr1.ReadLine();
-                    temp.ID = sr2.ReadLine();
+                    string[] data = sr1.ReadLine().Split(new string[] { "\t\t" }, StringSplitOptions.RemoveEmptyEntries);
+                    temp.Name = data[0];
+                    temp.ID = data[1];
                     allData.Add(temp);
                 }
             }
             else
             {
-                StreamWriter sw1 = new StreamWriter(System.Windows.Forms.Application.StartupPath + @"\metadata_name.txt", false, Encoding.UTF8);
+                StreamWriter sw1 = new StreamWriter(System.Windows.Forms.Application.StartupPath + @"\metadata.txt", false, Encoding.UTF8);
                 StreamWriter sw2 = new StreamWriter(System.Windows.Forms.Application.StartupPath + @"\metadata_id.txt", false, Encoding.UTF8);
 
                 do
                 {
-                    MemoryStream ms = new MemoryStream(client.DownloadData("http://data.taipei/opendata/datalist/apiAccess?scope=datasetMetadataSearch&limit=100&offset=0"));
+                    MemoryStream ms = new MemoryStream(client.DownloadData(string.Format("http://data.taipei/opendata/datalist/apiAccess?scope=datasetMetadataSearch&limit={0}&offset={1}", limit, offset)));
 
                     HtmlDocument doc = new HtmlDocument();
                     doc.Load(ms, Encoding.UTF8);
 
-                    dynamic data = JsonConvert.DeserializeObject(doc.DocumentNode.InnerHtml);
-                    foreach (dynamic a in data.result.results)
+                    try
                     {
-                        Data temp = new Data();
-                        temp.ID = a.id;
-                        //temp.ID.Replace("\"", "");
-                        temp.Name = a.title;
-                        temp.Name.Replace("\"", "");
-                        allData.Add(temp);
+                        dynamic data = JsonConvert.DeserializeObject(doc.DocumentNode.InnerHtml);
+
+                        count = data.result.count;
+                        foreach (dynamic a in data.result.results)
+                        {
+                            Data temp = new Data();
+                            temp.ID = a.id;
+                            //temp.ID.Replace("\"", "");
+                            temp.Name = a.title;
+
+                            try
+                            {
+                                if(a.resources.Count!=0)
+                                    if(a.resources[0].GetType().GetProperty("resourceId") != null)
+                                        temp.RID = a.resources[0].resourceId;
+                            }
+                            catch (Exception e)
+                            {
+                                temp.RID = a.resources.resourceId;
+                            }
+                            
+                            //temp.Name.Replace("\"", "");
+                            allData.Add(temp);
+                            if (first == 0)
+                            {
+                                sw1.WriteLine(a.fieldDescription);
+                                first++;
+                            }
+                            sw1.WriteLine(temp.Name + "\t\t" + temp.ID+ "\t\t" + temp.RID);
+                            offset++;
+                        }
                     }
-                    //string[] del = { "\"id\":\"", "\",\"title\":\"", "\",\"type\":" };
-
-                   // string[] data = doc.DocumentNode.InnerHtml.Split(del, StringSplitOptions.RemoveEmptyEntries);
-
-                   // string contexnt = doc.DocumentNode.InnerHtml;
-                   
-                /*    while (contexnt.Contains("\"id\":\""))
+                    catch (Exception e)
                     {
-                        Data temp = new Data();
-                        int str = 0, end = 0;
+                        Console.WriteLine("Error:" + e.Message);
 
-                        str = contexnt.IndexOf("\"id\":\"");
+                        //string[] del = { "\"id\":\"", "\",\"title\":\"", "\",\"type\":" };
 
-                        end = contexnt.IndexOf("\",\"title\":\"");
-                        temp.ID = contexnt.Substring(str + 6, end - (str + 6));
-                        contexnt = contexnt.Substring(end + 11);
-                        end = contexnt.IndexOf("\",\"");
-                        temp.Name = contexnt.Substring(0, end);
-                        contexnt = contexnt.Substring(end);
-                        sw1.WriteLine(temp.Name);
-                        sw2.WriteLine(temp.ID);
+                        //string[] data = doc.DocumentNode.InnerHtml.Split(del, StringSplitOptions.RemoveEmptyEntries);
 
-                    }*/
+                        string contexnt = doc.DocumentNode.InnerHtml;
+
+                        while (contexnt.Contains("\"id\":\""))
+                        {
+                            Data temp = new Data();
+                            int str = 0, end = 0;
+
+                            str = contexnt.IndexOf("\"id\":\"");
+
+                            end = contexnt.IndexOf("\",\"title\":\"");
+                            temp.ID = contexnt.Substring(str + 6, end - (str + 6));
+                            contexnt = contexnt.Substring(end + 11);
+                            end = contexnt.IndexOf("\",\"");
+                            temp.Name = contexnt.Substring(0, end);
+                            contexnt = contexnt.Substring(end);
+                            str = contexnt.IndexOf("\"resourceId\":\"");
+                            contexnt = contexnt.Substring(str+14);
+                            end = contexnt.IndexOf("\",\"");
+                            temp.RID = contexnt.Substring(0, end);
+                            contexnt = contexnt.Substring(end);
+                            allData.Add(temp);
+                            sw1.WriteLine(temp.Name + "\t\t" + temp.ID + "\t\t" + temp.RID);
+                            offset++;
+
+                        }
+                    }
 
 
-                    sw1.Close();
-                    sw2.Close();
-                } while (count >= 0);
-               
+                } while ((count-offset) > 0);
+                sw1.Close();
+                sw2.Close();
 
             }
-            //docContext.LoadHtml(doc.DocumentNode.InnerHtml);
+            
 
             Console.WriteLine("sdfsadf");
 
-           /* int urlIdx = 0;
-            while (urlIdx < urlList.Count)
+           // _form.update("ffff");
+            _form.update(allData);
+        }
+
+        public void craw(string[] url)
+        {
+            int count = 0;
+            int offset = 0;
+            int limit = 100;
+            WebClient client = new WebClient();
+
+            StreamWriter sw1 = new StreamWriter(string.Format(System.Windows.Forms.Application.StartupPath + @"\{0}.txt",url[0]), false, Encoding.UTF8);
+     
+            do
             {
+                MemoryStream ms = new MemoryStream(client.DownloadData(string.Format("http://data.taipei/opendata/datalist/apiAccess?scope=resourceAquire&rid={0}&limit={1}&offset={2}",url[1], limit, offset)));
+
+                HtmlDocument doc = new HtmlDocument();
+                doc.Load(ms, Encoding.UTF8);
+
                 try
                 {
-                    string url = urlList[urlIdx];
-                    string fileName = "data";// + toFileName(url);
-                    urlToFile(url, fileName);
-                    String html = fileToText(fileName);
+                    dynamic data = JsonConvert.DeserializeObject(doc.DocumentNode.InnerHtml);
+                    count = data.result.count;
+
+                    sw1.Write(doc.DocumentNode.InnerHtml);
+                    offset = offset + limit;
                 }
-                catch
+                catch (Exception e)
                 {
-                    Console.WriteLine("Error:" + urlList[urlIdx] + "fail!");
+                    Console.WriteLine("Error:" + e.Message);
+                    sw1.Write(doc.DocumentNode.InnerHtml);
+                    offset = offset + limit;
+
                 }
-            }
-            urlIdx++;*/
-        }
 
 
-        public static IEnumerable matches(String pPattern, String pText, int pGroupId)
-        {
-            Regex r = new Regex(pPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            for (Match m = r.Match(pText); m.Success; m = m.NextMatch())
-                yield return m.Groups[pGroupId].Value;
+            } while ((count - offset) > 0);
+            sw1.Close();
+            Console.WriteLine("sdfsadf");
         }
 
-        public static String fileToText(String filePath)
-        {
-            StreamReader file = new StreamReader(filePath);
-            String text = file.ReadToEnd();
-            file.Close();
-            return text;
-        }
-
-        public void urlToFile(String url, String file)
-        {
-            WebClient webclient = new WebClient();
-            //        webclient.Proxy = proxy;
-            webclient.DownloadFile(url, file);
-        }
-
-        public static String toFileName(String url)
-        {
-            String fileName = url.Replace('?', '_');
-            fileName = fileName.Replace('/', '_');
-            fileName = fileName.Replace('&', '_');
-            fileName = fileName.Replace(':', '_');
-            fileName = fileName.ToLower();
-            if (!fileName.EndsWith(".htm") && !fileName.EndsWith(".html"))
-                fileName = fileName + ".htm";
-            return fileName;
-        }
     }
 
 }
