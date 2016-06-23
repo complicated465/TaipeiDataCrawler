@@ -12,5 +12,9 @@ namespace TaipeiDataCrawler
        public string ID { set; get; }
        public string RID { set; get; }
        public string fieldDescription { set; get; }
+
+       public string weatherContent { set; get; }
+       public string weatherKey { set; get; }
+          
     }
 }
