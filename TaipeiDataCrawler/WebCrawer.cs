@@ -16,8 +16,10 @@ using Microsoft.VisualBasic.FileIO;
 
 namespace TaipeiDataCrawler
 {
+   
     public class WebCrawer
     {
+       
         private readonly Form1 _form;
         List<Data> allData = new List<Data>();
         List<Data> weatherData = new List<Data>();
@@ -29,17 +31,18 @@ namespace TaipeiDataCrawler
 
         List<string> urlList = new List<string>();
 
+        //data.taipe 目錄抓取
         public void craw()
         {
             int count = 0;
-            int offset = 0;
-            int limit = 100;
+            int offset = 0;   //跳過x筆資料
+            int limit = 100;  //回傳數量限制
             int first = 0;
             WebClient client = new WebClient();
+
             if (File.Exists(System.Windows.Forms.Application.StartupPath + @"\metadata.txt"))
             {
                 StreamReader sr1 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\metadata.txt", Encoding.UTF8);
-               // StreamReader sr2 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\metadata_id.txt", Encoding.UTF8);
                 while (!sr1.EndOfStream)
                 {
                     Data temp = new Data();
@@ -54,8 +57,7 @@ namespace TaipeiDataCrawler
             else
             {
                 StreamWriter sw1 = new StreamWriter(System.Windows.Forms.Application.StartupPath + @"\metadata.txt", false, Encoding.UTF8);
-                StreamWriter sw2 = new StreamWriter(System.Windows.Forms.Application.StartupPath + @"\metadata_id.txt", false, Encoding.UTF8);
-
+             
                 do
                 {
                     MemoryStream ms = new MemoryStream(client.DownloadData(string.Format("http://data.taipei/opendata/datalist/apiAccess?scope=datasetMetadataSearch&limit={0}&offset={1}", limit, offset)));
@@ -72,7 +74,6 @@ namespace TaipeiDataCrawler
                         {
                             Data temp = new Data();
                             temp.ID = a.id;
-                            //temp.ID.Replace("\"", "");
                             temp.Name = a.title;
 
                             try
@@ -88,12 +89,10 @@ namespace TaipeiDataCrawler
                             {
                                 temp.RID = a.resources.resourceId;
                             }
-                            
-                            //temp.Name.Replace("\"", "");
+                                                      
                             allData.Add(temp);
                             if (first == 0)
-                            {
-                                //sw1.WriteLine(a.fieldDescription);
+                            {                              
                                 first++;
                             }
                             sw1.WriteLine(temp.Name + "\t\t" + temp.ID+ "\t\t" + temp.RID);
@@ -103,10 +102,6 @@ namespace TaipeiDataCrawler
                     catch (Exception e)
                     {
                         Console.WriteLine("Error:" + e.Message);
-
-                        //string[] del = { "\"id\":\"", "\",\"title\":\"", "\",\"type\":" };
-
-                        //string[] data = doc.DocumentNode.InnerHtml.Split(del, StringSplitOptions.RemoveEmptyEntries);
 
                         string contexnt = doc.DocumentNode.InnerHtml;
 
@@ -147,7 +142,7 @@ namespace TaipeiDataCrawler
 
                 } while ((count-offset) > 0);
                 sw1.Close();
-                sw2.Close();
+               
 
             }
             
@@ -238,39 +233,23 @@ namespace TaipeiDataCrawler
             string auKey = "CWB-18E287BF-DF2C-4019-BA5B-41D58E91C750";
             WebClient client = new WebClient();
             HttpClient client1 = new HttpClient();
-            StreamWriter sw1 = new StreamWriter(string.Format(System.Windows.Forms.Application.StartupPath + @"\{0}.txt", url[0]), false, Encoding.UTF8);
+
             HtmlDocument doc = new HtmlDocument();
             try
             {
-                MemoryStream ms = new MemoryStream(client.DownloadData(string.Format("http://opendata.cwb.gov.tw/opendataapi?dataid={0}&authorizationkey={1}", url[1], auKey)));
-                client.DownloadFile(string.Format("http://opendata.cwb.gov.tw/opendataapi?dataid={0}&authorizationkey={1}", url[1], auKey), string.Format(System.Windows.Forms.Application.StartupPath + @"\abc.txt"));
-
-                doc.Load(ms, Encoding.UTF8);
+               
+                client.DownloadFile(string.Format("http://opendata.cwb.gov.tw/opendataapi?dataid={0}&authorizationkey={1}", url[1], auKey), string.Format(System.Windows.Forms.Application.StartupPath + @"\{0}.txt", url[0]));
+               
             }
-            catch
+            catch(Exception e)
             {
                 System.Windows.Forms.MessageBox.Show("無法下載!!");
-                sw1.Close();
+               
                 return;
             }
-            try
-            {                
-                  
-
-                sw1.Write(doc.DocumentNode.InnerHtml);
-                    
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error:" + e.Message);
-                sw1.Write(doc.DocumentNode.InnerHtml);
-                    
-
-            }
-
 
             
-            sw1.Close();
+            
             Console.WriteLine("sdfsadf");
             System.Windows.Forms.MessageBox.Show("下載完成!!");
         }
@@ -279,73 +258,67 @@ namespace TaipeiDataCrawler
         {
             WebClient client = new WebClient();
             HttpClient client1 = new HttpClient();
-            using (WebClient client2 = new WebClient())
+           /**   update dataset**/ 
+           /*   using (WebClient client2 = new WebClient())
             {
                 client2.DownloadFile(@"http://file.data.gov.tw/opendatafile/政府資料開放平臺資料集清單.csv",
                                    System.Windows.Forms.Application.StartupPath + @"\政府資料開放平臺資料集清單.csv");
-            }
+            }*/
             if (File.Exists(System.Windows.Forms.Application.StartupPath + @"\政府資料開放平臺資料集清單.csv"))
             {
-                using (TextFieldParser parser = new TextFieldParser((System.Windows.Forms.Application.StartupPath + @"\政府資料開放平臺資料集清單.csv")))
+                TextFieldParser parser = new TextFieldParser((System.Windows.Forms.Application.StartupPath + @"\政府資料開放平臺資料集清單.csv"));
+                
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(",");
+
+                string[] nowFields = parser.ReadFields();
+                nowFields = parser.ReadFields();
+                while (!parser.EndOfData)
                 {
-                    parser.TextFieldType = FieldType.Delimited;
-                    parser.SetDelimiters(",");
-
-                    string[] nowFields = parser.ReadFields();
-                    nowFields = parser.ReadFields();
-                    while (!parser.EndOfData)
-                    {
        
-                        //Processing row
-                        
+                    //Processing row
+                    govData temp = new govData();
+                    temp.tite = nowFields[0];
+                    temp.distrbution = new List<resourceData>();
+                    resourceData res = new resourceData();
+                    res.format = nowFields[1];
+                    res.downloadURL = nowFields[2];
+                    temp.distrbution.Add(res);
 
-                        govData temp = new govData();
-                        temp.tite = nowFields[0];
-                        temp.distrbution = new List<resourceData>();
-                        resourceData res = new resourceData();
-                        res.format = nowFields[1];
-                        res.downloadURL = nowFields[2];
+                    
+                    string[] nextFields = parser.ReadFields();
+                    if (parser.EndOfData)
+                    {
+                        break;
+                    }                     
+
+                    //檢查是否有一樣
+                    while (nextFields[0] == nowFields[0])
+                    {
+                            
+                        res = new resourceData();
+                        res.format = nextFields[1];
+                        res.downloadURL = nextFields[2];
                         temp.distrbution.Add(res);
-
-                        
-                        string[] nextFields = parser.ReadFields();
-                        if (parser.EndOfData) break;
-                        while (nextFields[0] == nowFields[0])
+                        nextFields = parser.ReadFields();
+                        if (parser.EndOfData)
                         {
-                            res = new resourceData();
-                            res.format = nextFields[1];
-                            res.downloadURL = nextFields[2];
-                            temp.distrbution.Add(res);
-                            nextFields = parser.ReadFields();
+                            break;
                         }
-                        govDataList.Add(temp);
-                        nowFields = nextFields;
-
+                    
                     }
+                    govDataList.Add(temp);
+                    nowFields = nextFields;
+
+                    
                 }
 
-                /*  StreamReader sr1 = new StreamReader(System.Windows.Forms.Application.StartupPath + @"\govContent.txt", Encoding.UTF8);
-                   while (!sr1.EndOfStream)
-                   {
-                       govData temp = new govData();
-                       string[] data = sr1.ReadLine().Split(new string[] { "\t\t" }, StringSplitOptions.RemoveEmptyEntries);
-                       temp.tite = data[0];
-                       temp.distrbution = new List<resourceData>();
-                       for (int i = 1; i < data.Length; i = i + 2)
-                       {
-                           resourceData res = new resourceData();
-                           res.downloadURL = data[i];
-                           res.format = data[i + 1];
-                           temp.distrbution.Add(res);
-                       }
-                       govDataList.Add(temp);
-                   }
-                   sr1.Close();*/
+                
             }
             else
             {
                 return;
-               
+               /** update dataset(xml)*/
                /* StreamWriter sw1 = new StreamWriter(System.Windows.Forms.Application.StartupPath + @"\govContent.txt",false, Encoding.UTF8);
                 HttpResponseMessage response = await client1.GetAsync(("http://file.data.gov.tw/opendatafile/政府資料開放平臺資料集清單.xml"));
                 MemoryStream ms1 = new MemoryStream(client.DownloadData("http://file.data.gov.tw/opendatafile/政府資料開放平臺資料集清單.xml"));
@@ -426,13 +399,10 @@ namespace TaipeiDataCrawler
         }
         public async void govCraw(string[] url)
         {
-            WebClient client = new WebClient();
-            
-            HttpClient client1 = new HttpClient();
-            
-         //   StreamWriter sw1 = new StreamWriter("");
+            WebClient client = new WebClient();           
+            HttpClient client1 = new HttpClient();                 
             HtmlDocument doc = new HtmlDocument();
-           // url[1] = @"http://ws.ndc.gov.tw/001/administrator/10/RelFile/5781/6393/0018999_2.rar";
+          
             try
             {
                 var fi = new Uri(url[1]);
@@ -448,40 +418,19 @@ namespace TaipeiDataCrawler
                 {
                     ext = Path.GetExtension(response.RequestMessage.RequestUri.LocalPath.Split(';')[0]);
                 }
-               // var format = new FileInfo(response.RequestMessage.RequestUri.AbsolutePath);
+               
                 string[] format1 = (response.Content.Headers.ContentType.MediaType).Split('/');
                 ext.Trim('/','"');
                 
                 client.DownloadFile(url[1], string.Format(System.Windows.Forms.Application.StartupPath + @"\{0}{1}", url[0], ext) );
-                //MemoryStream ms = new MemoryStream(client.DownloadData(url[1]));
-                //      sw1 = new StreamWriter(string.Format(System.Windows.Forms.Application.StartupPath + @"\{0}.{1}", url[0],format.Extension), false, Encoding.UTF8);
-                //     sw1.Write(ms);
-                //   sw1.Close();
+               
             }
             catch (Exception e)
             {
-                System.Windows.Forms.MessageBox.Show("無法下載!!");
-               // sw1.Close();
+                System.Windows.Forms.MessageBox.Show("無法下載!!");             
                 return;
             }
-            try
-            {
-
-
-
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error:" + e.Message);
-                //sw1.Write(doc.DocumentNode.InnerHtml);
-
-
-            }
-
-
-
-            // sw1.Close();
+         
             Console.WriteLine("sdfsadf");
             System.Windows.Forms.MessageBox.Show("下載完成!!");
 
